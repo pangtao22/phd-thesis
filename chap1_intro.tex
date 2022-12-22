@@ -1,0 +1,47 @@
+%% This is an example first chapter.  You should put chapter/appendix that you
+%% write into a separate file, and add a line \include{yourfilename} to
+%% main.tex, where `yourfilename.tex' is the name of the chapter/appendix file.
+%% You can process specific files by typing their names in at the 
+%% \files=
+%% prompt when you run the file main.tex through LaTeX.
+\chapter{Introduction}
+% 1. Manipulation: Robots vs. Humans
+% 2. Why it's hard for model-based methods (hybrid + smoothing)
+% 3. But What about RL?
+% 4. My contribution.
+In 1988, Salisbury et al. from the MIT AI lab envisioned \emph{contact-rich} robotic manipulators that ``employ all the available manipulation surfaces of the robot to \emph{act} upon and \emph{sense} the environment'', in a way similar to how humans interact with the environment using their limbs and torso \cite{salisbury1988preliminary}. This is in stark contrast with the prevailing practice in robotic manipulation back then, where environmental interaction is limited ``at the hand of the arm'', while the arm itself needs to carefully avoid contacts. Unfortunately, real-world deployment of contact-rich robotic manipulators still remains elusive even after more than 30 years. In most contemporary commercial applications of robotic manipulation, such as in warehouses or on factory floors, the robotic manipulator is still divided into the touching hand and the collision-avoiding arm. 
+
+The difficulty of contact-rich manipulation planning can be illustrated with a simple example shown in Fig. X, where the object slides along a rail with sufficient damping (), and the robot is PD-controlled. Let us denote the \emph{steady-state} position of the object 
+$f(q, u)$
+
+The difficulty of contact-rich manipulation, and the resulting dichotomy between the arm and the hand in real-world robotic applications, are also mirrored in the robotics research literature. 
+
+
+Over the decades, researchers have developed increasingly effective algorithms for grasping objects with the hand \cite[\textsection 17]{siciliano2008springer} and avoiding obstacles with the arm \cite{lavalle1998rapidly, marcucci2022motion}. In contrast, despite the community's best effort, a reliable, generalizable and interpretable solution to human-like contact-rich manipulation still remains to be found. 
+
+Despite the lack of an established solution, roboticists have identified several key technical challenges of the contact-rich manipulation problem. At the core of these challenges is the problem of motion planning subject to \emph{non-smooth} contact dynamics constraints. Due to transitions such as from non-contact to contact or from sticking friction to sliding, contact dynamics consists of numerous smooth pieces, or \emph{modes}, separated by \emph{guard surfaces}. Existing strategies to tackle this non-smoothness fall largely into two categories:
+\begin{itemize}
+\item The first category transcribes the problem as a nonlinear optimization program, and handles non-smoothness in the constraints by numerical smoothing. As the nonlinear programs are typically solved with descent methods, smoothing is essential for good convergence behavior. 
+% However, smoothing also introduces an aphysical ``force-at-a-distance'' effect, and therefore needs to be iteratively decreased in order to respect the true dynamics constraint.
+Nonlinear optimization can find trajectories for complex systems \cite{posa2014direct}, but frequently gets stuck in local minima due to the problem's non-convexity, and thus requires non-trivial initial guesses.
+
+\item The second category reasons explicitly about the transitions between contact modes. By sampling \cite{cheng2021contact} or enumerating \cite{marcucci2017approximate} contact modes, such approaches are effective at escaping local minima, but have yet to scale beyond relatively simple systems, as the number of modes grows exponentially with the number of contacts.
+\end{itemize}
+
+
+This thesis proposes a global planning algorithm for complex contact-rich robotic systems such as dexterous hands, which have been considered difficult for existing model-based methods.
+Global exploration is carried out with a kino-dynamic sampling-based motion planner that respects the contact dynamics constraints.
+By abstracting contact modes away with a smoothed version of the contact dynamics, the planner can effectively explore the state space without suffering from the exponential explosion of contact modes. 
+At the heart of the planner is a novel formulation of rigid-body contact dynamics that is quasi-static, convex, differentiable and amenable to smoothing, all of which are features designed for contact-rich manipulation planning.
+
+The challenges facing contact-rich manipulation extends far beyond planning. Once a plan is generated, interaction forces between the robot and the objects need to be sensed and estimated. The estimated forces, together with other estimated states, are then fed to a stabilizing controller that is aware of making and breaking contacts. 
+
+Therefore, this thesis also explores (\textbf{i}) external contact force estimation from joint torque measurements, and (\textbf{ii}) reconciling tracking trajectory and bounding contact forces using a inverse-dynamics controller in the simple case of interacting with a static environment, where the controller uses a simplifed version of the quasi-static dynamics model used by the contact-rich planner.
+
+The introduction would not be complete without discussing learning-based methods. Recent advances in deep Reinforcement Learning(RL) have created impressive  dexterous manipulation demos on hardware \cite{andrychowicz2020learning}, but the learned policy often lacks interpretability, generalizability, and requires a large amount of offline computation.
+In contrast, planning can solve new problems with a small amount of online compute. 
+
+I \emph{believe} that when we eventually succeed in deploying a contact-rich robot into the wild, the robot will have both polices for tasks it does often and planners for tasks it never encountered before. Moreover, the structures we discover when designing model-based planners can help us design hierarchical polices that are easier to learn. 
+
+
+

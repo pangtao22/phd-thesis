@@ -1,0 +1,46 @@
+\chapter{Quasi-static Rigid Multibody Dynamics}
+
+It is not hard to imagine the different ways in which a dynamic model that simulates objects making contacts with other can be useful. But usefulness can mean different things. Some people care about simulation speed, some care about accuracy. For contact-rich manipulation planning, we need a model that makes planning easy. Although it is difficult to rigorously maximize the ease of planning, I can write down desirable properties of such a model: 
+- As few parameters as possible
+- Physically accurate
+- Easy to evaluate
+- Allows the planner to take fewer steps
+- Differentiability
+- Amenable to smoothing. 
+
+In this section, I'll propose a model that have the traits above, and justify why these traits are necessary. The model is for rigid bodies, and is quasi-static, convex and differentiable.
+
+%==================================================
+\section{Rigid-body dynamics}
+Rigid body assumption is valid and simplifies things. But sometimes the rigid assumption can lead to aphysical behaviors such as infinite accelerations in contact problems, think about the famous Painleve. 
+
+Therefore, it is better to reason about impulse-momentum rather than force-acceleration, and to write down contact dynamics in discrete time, i.e. $x_{+} = f(x, u)$. 
+
+Second-order dynamics.
+Coulomb friction.
+Linear complementarity, nonlinear complementarity and cone complementarity.
+
+Cone complementarity <-> Anitescu.
+Write down the dual of Anitescu and compare with Mujoco.
+Anitescu has one hyperparameter, the step size, in the primal, whereas Mujoco has an entire matrix in the dual.
+
+The step size is large during global search, and is small during local refinement. 
+
+%==================================================
+\section{Quasi-static}
+\subsection{What}
+Proposed by Matt Mason(?). One of the most popular examples is planar pushing, where the robot velocity is mapped to the object velocity by solving the force balance constraints. 
+
+But using velocity as input in more general settings is wrong. Grasping is an example. In fact, if we look at the Bond Graph of a quasi-static system with velocity input, we will realize that this system is ill-defined. 
+
+The problem with using velocity as input is that robots are modeled as admittance. The solution is to model the robot as an impedance instead, as they should be according to Hogan.
+
+Mass matrix as a regularization.
+
+\subsection{Why}
+In addition to the obvious benefit of halving the size of state space, it also skips the transients in planning, allowing the planner to take fewer steps to reach the goal.
+
+
+\section{Differentiability}
+
+\section{Smoothing}
