@@ -31,7 +31,44 @@
 %% some PDF conversions mess up the ligatures.  -LB, 1/22/2014
 \usepackage{cmap}
 \usepackage[T1]{fontenc}
+\usepackage{amsmath,amsfonts}
+\usepackage{algorithmic}
+\usepackage{array}
+\usepackage[font=small, labelfont=bf]{subfig}
+\usepackage{textcomp}
+% \usepackage{stfloats}
+\usepackage{url}
+\usepackage{verbatim}
+\usepackage{graphicx}
+
+\usepackage{multicol}
+\usepackage[bookmarks=true]{hyperref}
+\usepackage{graphics} % for pdf, bitmapped graphics files
+\usepackage{epsfig} % for postscript graphics files
+\usepackage{mathrsfs}
+\usepackage[font=small,labelfont=bf]{caption}
+% \usepackage{times} % assumes new font selection scheme installed
+\usepackage{amssymb}  % assumes amsmath package installed
+%\usepackage{algorithm2e}
+\usepackage[ruled,vlined,linesnumbered]{algorithm2e}
+\usepackage{optidef}
+\usepackage{booktabs}
+\usepackage{amsthm}
+\usepackage{svg}
+\usepackage{cite}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{dsfont}
+\usepackage{graphics}
+\usepackage{float}
+
 \pagestyle{plain}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=green,      
+    urlcolor=black,
+}
 
 %% This bit allows you to either specify only the files which you wish to
 %% process, or `all' to process all files which you \include.
@@ -42,18 +79,19 @@
 \ifx\files\all \typeout{Including all files.} \else %\typeout{Including only \files.} \includeonly{\files} \fi
 
 \begin{document}
-
 \include{cover}
 % Some departments (e.g. 5) require an additional signature page.  See
 % signature.tex for more information and uncomment the following line if
 % applicable.
 % \include{signature}
 \pagestyle{plain}
+\input{commands.tex}
 \include{contents}
 \include{chap1_intro}
-\include{chap2_background}
-\include{chap3_quasi_static_dynamics}
-\appendix
+\include{chap2_quasi_static_dynamics}
+\include{chap3_contact_rich_planning.tex}
+\include{chap4_force_from_torque.tex}
+\include{chap5_quasi_static_control.tex}
 % \include{appa}
 % \include{appb}
 \include{biblio}
