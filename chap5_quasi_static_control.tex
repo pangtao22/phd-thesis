@@ -14,7 +14,10 @@ However, the complete and total avoidance of contacts is a severe limitation, ev
 In this chapter, we propose a QP controller which, given estimated contact positions and forces in unexpected contacts, tracks the reference trajectory as closely as possible while keeping contact forces below a user-defined upper bound.
 Compared with similar controllers based on null-space projection \cite{nakamura1987task, siciliano1991general, aghili2005unified, dehio2018modeling, jorda2019contact}, the QP formulation shares the same underlying dynamics, but allows for more gentle separation when the robot breaks contact with the environment. The gentle separation happens naturally as a result of bounding the contact forces with inequality constraints, which are not supported by null-space projection.
 
-Instead of the usual second-order dynamics constraints used in robot locomotion \cite{kuindersma2014efficiently, koolen2016design}, the proposed QP controller utilizes a quasistatic dynamics model which predicts future equilibrium configurations and contact forces for a stiffness-controlled robot in response to position commands. By assuming bi-lateral, frictionless contacts, the quasistatic dynamics model can be expressed as equality constraints and does not require the estimation of friction coefficients. Moreover, as real-world contacts are uni-lateral and frictional, we also propose measures which both capitalize the simplicity of bi-lateral, frictionless contact models and mitigate the side effects of modeling real-world contacts as such.
+Instead of the usual second-order dynamics constraints used in robot locomotion \cite{kuindersma2014efficiently, koolen2016design}, the proposed QP controller utilizes a simplified version of the CQDC dynamics model proposed in Chapter \ref{chapter:quasi_static_dynamics}. 
+Similar to CQDC, the simplified quasi-static model predicts future equilibrium configurations and contact forces for a stiffness-controlled robot in response to position commands.
+The simplified model consists of only the robot, and assumes that the world is rigid and stationary. In addition, it assumes bi-lateral, frictionless contacts which can be modeled with only equality constraints. In addition to the numerical simplicity, this modeling choice also simplifies contact sensing in hardware experiments: it only needs contact locations on the robot, and does not need friction coefficients. 
+As real-world contacts are uni-lateral and frictional, we also propose measures which both capitalize the simplicity of bi-lateral, frictionless contact models and mitigate the side effects of modeling real-world contacts as such.
 
 
 \section{Related Work  \label{sec:related_work}}
@@ -29,16 +32,11 @@ On the other hand, a classical example of indirect force control is impedance co
 
 Compared with direct force control, indirect force control schemes are usually implemented as an outer-loop around the robot's factory motion controller, and therefore does not bear the responsibility of maintaining stability and can run at a much lower rate.
 
-\subsection{Quasi-static Dynamics Models in Manipulation}
-Quasistatic dynamics has been used with great success to simplify the planning and control of simple tasks such as planar pushing \cite{hogan2020feedback}, where modeling robots as prescribed motion trajectories is sufficient. However, for multi-contact tasks such as grasping \cite{pang1996complementarity}, such simplifications can lead to non-unique contact forces  or violation of non-penetration constraints \cite{halm2018quasi, pang2018robust}. By modeling robots as impedances, our recent multibody quasistatic model \cite{pang2021convex} can faithfully reproduce the steady-state behavior of stiffness-controlled robot arms in multi-contact scenarios.
-
-The quasistatic robot dynamics model proposed in this work, which predicts future joint angles in whole-arm contact scenarios, is an extension to classical indirect force control schemes that typically focus solely on the relationship between end effector pose and wrench \cite{salisbury1980active, hogan1984impedance}. The proposed quasistatic dynamics is also a frictionless simplification of the Coulomb-friction-based quasistatic dynamics \cite{pang2021convex}, which can be implemented on hardware with minimal contact sensing.
-
 
 \subsection{Null-space Projection}
 Null-space projection is a classical and popular technique for executing a hierarchy of tasks defined by equality constraints \cite{nakamura1987task, siciliano1991general, aghili2005unified, dehio2018modeling, jorda2019contact}. The constraints imposed by higher-priority tasks are enforced by projecting the torque needed by low-priority tasks into the null space of the higher-priority tasks. The projections are defined over the ranges and null spaces of the task Jacobians and their \textit{weighted} pseudo-inverses. It is noteworthy that the projections are generally not orthogonal, unless the weight matrix is identity \cite{dietrich2015overview}.
 
-More recently, controllers based on constrained optimizations such as quadratic programs (QP) have gained popularity in both locomotion \cite{koolen2016design, kuindersma2014efficiently} and manipulation \cite{jain2013manipulation}. Compared with null-space projections, QP-based controllers can handle both equality and inequality constraints. In this work, we formulate the problem of trajectory tracking with bounded contact forces as a QP with a novel quasistatic dynamics constraint. We also show that a controller based on null-space projection implicitly enforces the same quasistatic dynamics constraint when the projection is \textit{stiffness-consistent} \cite{dietrich2015overview}.
+More recently, controllers based on constrained optimizations such as quadratic programs (QP) have gained popularity in both locomotion \cite{koolen2016design, kuindersma2014efficiently} and manipulation \cite{jain2013manipulation}. Compared with null-space projections, QP-based controllers can handle both equality and inequality constraints. In this work, we formulate the problem of trajectory tracking with bounded contact forces as a QP with a novel quasi-static dynamics constraint. We also show that a controller based on null-space projection implicitly enforces the same quasi-static dynamics constraint when the projection is \textit{stiffness-consistent} \cite{dietrich2015overview}.
 
 
 \section{Background and Notations}
@@ -56,16 +54,16 @@ where $x^{l}$ and $u^{l}$ are the state and input at the current time step $l$, 
 The most common choice for the dynamics constraint (\ref{eq:generic_mpc:dynamics_constraint}) is the Newton's Second Law (N2L). For example, the DLR (German Aerospace Center) family of robots, including the KUKA iiwa and FRANKA panda, has the following closed-loop second-order dynamics after gravity compensation\cite{ott2008passivity}: 
 \begin{equation}
 \label{eq:iiwa_second_order_closed_loop_dynamics}
-M(q) \ddot{q} + \left(C(q, \dot{q}) + D_q\right) \dot{q} + K_q(q - \qcmd) = \tauE,
+\mb{M}(q) \ddot{q} + \left(\mb{C}(q, \dot{q}) + \mb{D}_q\right) \dot{q} + \mb{K}_q(q - \qcmd) = \tauE,
 \end{equation}
-where $q \in \mathbb{R}^{n_q}$ is the joint angles of the robot, $C(q, \dot{q}) \dot{q}$ is the Coriolis force, $D_q$ is a diagonal damping matrix, $K_q$ is a diagonal stiffness matrix, $\qcmd$ is the commanded joint angles, and $\tauE$ is the torque by external contacts.
+where $q \in \mathbb{R}^{n_q}$ is the joint angles of the robot, $\mb{C}(q, \dot{q}) \dot{q}$ is the Coriolis force, $\mb{D}_q$ is a diagonal damping matrix, $\mb{K}_q$ is a diagonal stiffness matrix, $\qcmd$ is the commanded joint angles, and $\tauE$ is the torque by external contacts.
 
 \subsection{Contact and Multibody Notations}
 We consider rigid, point contacts in this work. The number of contacts the robot makes with the environment is denoted by $n_c$. Each contact point is denoted by $C_i$. The coordinates of the contact point relative to world frame, expressed in world frame is written as $\quantity{p}{W}{C_i}{} \in \mathbb{R}^3$; contact force at $C_i$ expressed in world frame is represented by $\quantity{f}{}{C_i}{W} \in \mathbb{R}^3$. 
 
-Position Jacobian of the contact point $C_i$ relative to frame $W$, expressed in frame $W$, is denoted by $J_{q}^{\quantity{p}{W}{C_i}{}}(q) : \mathbb{R}^{n_q} \rightarrow \mathbb{R}^{3 \times n_q}$. It maps the robot's joint velocity $\Dot{q}$ to the velocity of point $C_i$ in world frame $W$:
+Position Jacobian of the contact point $C_i$ relative to frame $W$, expressed in frame $W$, is denoted by $\mb{J}_{q}^{\quantity{p}{W}{C_i}{}}(q) : \mathbb{R}^{n_q} \rightarrow \mathbb{R}^{3 \times n_q}$. It maps the robot's joint velocity $\Dot{q}$ to the velocity of point $C_i$ in world frame $W$:
 \begin{equation}
-\quantity{v}{W}{C_i}{} = J_{q}^{\quantity{p}{W}{C_i}{}}(q) \Dot{q}.
+\quantity{v}{W}{C_i}{} = \mb{J}_{q}^{\quantity{p}{W}{C_i}{}}(q) \Dot{q}.
 \end{equation}
 
 We further define
@@ -73,68 +71,64 @@ We further define
 \label{eq:contact_definitions}
 \begin{align}
 f_i  &\coloneqq \norm{\quantity{f}{}{C_i}{W}} \in \mathbb{R};  \;  u_i \coloneqq \quantity{f}{}{C_i}{W} / f_i \in \mathbb{R}^3\\
-J_{u_i} &\coloneqq u_i^{\intercal} J_{q}^{\quantity{p}{W}{C_i}{}} \in \mathbb{R}^{1 \times n_q}\\
-J_u &\coloneqq \left[J_{u_1}^\intercal, J_{u_2}^\intercal, \cdots J_{u_{n_c}}^\intercal \right]^\intercal \in \mathbb{R}^{n_c \times n_q}. \label{eq:contact_jacobian}
+\mb{J}_{u_i} &\coloneqq u_i^{\intercal} \mb{J}_{q}^{\quantity{p}{W}{C_i}{}} \in \mathbb{R}^{1 \times n_q}\\
+\mb{J}_u &\coloneqq \left[\mb{J}_{u_1}^\intercal, \mb{J}_{u_2}^\intercal, \cdots \mb{J}_{u_{n_c}}^\intercal \right]^\intercal \in \mathbb{R}^{n_c \times n_q}. \label{eq:contact_jacobian}
 \end{align}
 \end{subequations}
-The $i$-th row of $J_u$ maps $\Dot{q}$ to the Cartesian velocity of $C_i$ along $u_i$ in world frame. We assume that $J_u$ is full-rank.
+The $i$-th row of $\mb{J}_u$ maps $\Dot{q}$ to the Cartesian velocity of $C_i$ along $u_i$ in world frame. We assume that $\mb{J}_u$ is full-rank.
 
 
 \section{Quasi-static Dynamics}
 \subsection{Dynamics as Transitions between Equilibria \label{sec:quasistatic_dynamics_1}}
-For robot arms with a joint-level stiffness controller, their steady-state equilibrium condition can be obtained by setting the derivative terms in the second-order dynamics (\ref{eq:iiwa_second_order_closed_loop_dynamics}) to 0:
+In this subsection, we introduce the simplified quasi-static contact model to be used by the inverse dynamics controller \eqref{eq:generic_mpc}. 
+When a CQDC dynamics model has only one robot and no objects, the system's state consists only of the joint angles $q$, and input the commanded joint angles $\qcmd$. 
+Similar to CQDC, the steady-state equilibrium condition can be obtained by setting the derivative terms in the second-order dynamics (\ref{eq:iiwa_second_order_closed_loop_dynamics}) to 0:
 \begin{equation}
 \label{eq:quaistatic_force_balance}
-K_q (\qcmd - q) + \tauE = 0. 
+\mb{K}_q (\qcmd - q) + \tauE = 0. 
 \end{equation}
 
-For a stiffness-controlled robot, we can define its \textit{quasi-static} dynamics, whose state consists only of the joint angles $q$, and input the commanded joint angles $\qcmd$. As shown in Fig. \ref{fig:quasistatic_dynamics}, the quasistatic dynamics predicts $x^{l+1} \coloneqq q^{l+1}$, the equilibrium configuration at the next time step, from the current equilibrium configuration $q^{l}$ and the next commanded configuration $u^l \coloneqq \qcmd[l+1]$.
+As shown in Fig. \ref{fig:quasistatic_dynamics}, the simplifed quasi-static dynamics predicts $x^{l+1} \coloneqq q^{l+1}$, the equilibrium configuration at the next time step, from the current equilibrium configuration $q^{l}$ and the next commanded configuration $u^l \coloneqq \qcmd[l+1]$.
 \begin{figure}[h]
-\vspace{-0.3cm}
 \centering
-\includegraphics[width=0.45\linewidth]{figures/04_control/quasistatic_dynamics.png}
-\caption{Quasistatic dynamics of a 2D, 2-link robot arm. The arm starts at $q^l$ (black) and is commanded to go to $\qcmd[l+1]$ (red). The virtual spring connecting $\qcmd[l+1]$ to $q^l$ pulls the robot towards $\qcmd[l+1]$, but the robot eventually stabilizes to $q^{l+1}$ (green) due to contact constraints. At $l+1$, the arm makes two contact with two obstacles at $C_1$ and $C_2$ with contact forces $\lambda_1$ and $\lambda_2$.}
+\includegraphics[width=0.5\linewidth]{figures/04_control/quasistatic_dynamics.png}
+\caption{Quasi-static dynamics of a 2D, 2-link robot arm. The arm starts at $q^l$ (black) and is commanded to go to $\qcmd[l+1]$ (red). The virtual spring connecting $\qcmd[l+1]$ to $q^l$ pulls the robot towards $\qcmd[l+1]$, but the robot eventually stabilizes to $q^{l+1}$ (green) due to contact constraints. At $l+1$, the arm makes two contact with two obstacles at $C_1$ and $C_2$ with contact forces $\lambda_1$ and $\lambda_2$.}
 \label{fig:quasistatic_dynamics}
-\vspace{-0.3cm}
 \end{figure}
 
-The new equilibrium $q^{l+1}$ can be solved for by minimizing the potential energy of the robot, subject to the contact constraints:
+Assuming that the contacts are bi-lateral constraints instead of the usual unilateral constraints which need to be modeled with complementarity, the new equilibrium $q^{l+1}$ can be solved for by minimizing the potential energy of the robot subject to equality constraints:
 \begin{subequations}
-
 \label{eq:quasistatic_dynamics_qp}
 \begin{align}
-\underset{q^{l+1}}{\text{min.}} \; &\frac{1}{2}(\qcmd[l+1] - q^{l+1})^\intercal K_q (\qcmd[l+1] - q^{l+1}) \; \text{s.t.} \\
-& J_u(q^l) (q^{l+1} - q^{l}) = 0. \label{eq:quasistatic_dynamics_qp:equality_constraint}
+\underset{q^{l+1}}{\text{min.}} \; &\frac{1}{2}(\qcmd[l+1] - q^{l+1})^\intercal \mb{K}_q (\qcmd[l+1] - q^{l+1}) \; \text{s.t.} \\
+& \J_u(q^l) (q^{l+1} - q^{l}) = 0. \label{eq:quasistatic_dynamics_qp:equality_constraint}
 \end{align}
 \end{subequations}
 
 To derive the contact forces, we start with the Lagrangian of QP (\ref{eq:quasistatic_dynamics_qp}):
 \begin{equation}
-\begin{aligned}
-L(q^{l+1}, \lambda) = &\frac{1}{2} (\qcmd[l+1] - q^{l+1})^\intercal K_q (\qcmd[l+1] - q^{l+1}) \\
-&- (\lambda^{l+1})^\intercal J_u(q^{l+1} - q^l)
-\end{aligned}
+L(q^{l+1}, \lambda) = \frac{1}{2} (\qcmd[l+1] - q^{l+1})^\intercal \mb{K}_q (\qcmd[l+1] - q^{l+1}) - (\lambda^{l+1})^\intercal \J_u(q^{l+1} - q^l)
 \end{equation}
-where $\lambda^{l+1} \in \mathbb{R}^{n_c}$ is the Lagrange multipliers of the contact constraint (\ref{eq:quasistatic_dynamics_qp:equality_constraint}), which can also be interpreted as the contact forces generated by (\ref{eq:quasistatic_dynamics_qp:equality_constraint}); the dependency of $J_u$ on $q^l$ is dropped for simplicity.
+where $\lambda^{l+1} \in \mathbb{R}^{n_c}$ is the Lagrange multipliers of the contact constraint (\ref{eq:quasistatic_dynamics_qp:equality_constraint}), which can also be interpreted as the contact forces generated by (\ref{eq:quasistatic_dynamics_qp:equality_constraint}); the dependency of $\J_u$ on $q^l$ is dropped for simplicity.
 
 The KKT optimality condition of QP (\ref{eq:quasistatic_dynamics_qp}) is given by
 \begin{subequations}
 
 \label{eq:dynamics_qp_kkt}
 \begin{align}
-\nabla_{q^{l+1}}L = K_q (q^{l+1} - \qcmd[l+1]) - J_u^\intercal \lambda^{l+1} &= 0, \label{eq:dynamics_qp_kkt:gradient} \\
-  J_u \left(q^{l+1} - q^l\right) &= 0. \label{eq:dynamics_qp_kkt:equality_constraint}
+\nabla_{q^{l+1}}L = \mb{K}_q (q^{l+1} - \qcmd[l+1]) - \J_u^\intercal \lambda^{l+1} &= 0, \label{eq:dynamics_qp_kkt:gradient} \\
+  \J_u \left(q^{l+1} - q^l\right) &= 0. \label{eq:dynamics_qp_kkt:equality_constraint}
 \end{align}
 \end{subequations}
-where (\ref{eq:dynamics_qp_kkt:gradient}) is equivalent to the steady-state force balance condition (\ref{eq:quaistatic_force_balance}), assuming that $\tauE$ is generated by the $n_c$ point contacts, i.e. $\tauE = J_u^\intercal \lambda^{l+1}$.
+where (\ref{eq:dynamics_qp_kkt:gradient}) is equivalent to the steady-state force balance condition (\ref{eq:quaistatic_force_balance}), assuming that $\tauE$ is generated by the $n_c$ point contacts, i.e. $\tauE = \J_u^\intercal \lambda^{l+1}$.
 
 Explicit expressions for $\lambda^{l+1}$ and $q^{l+1}$ can also be derived from the KKT conditions (\ref{eq:dynamics_qp_kkt}):
 \begin{subequations}
 
 \label{eq:explicit_force_and_state}
 \begin{align}
-\lambda^{l+1} &= -(J_u K_q^{-1} J_u^\intercal)^{-1} J_u (\qcmd[l+1] - q^l), \label{eq:explicit_force_and_state:force}\\
-q^{l+1} &= q^l + \left(I -  K_q^{-1}J_u^\intercal (J_u K_q^{-1} J_u^\intercal)^{-1}J_u \right) (\qcmd[l+1] - q^l). \label{eq:explicit_force_and_state:state}
+\lambda^{l+1} &= -(\J_u \mb{K}_q^{-1} J_u^\intercal)^{-1} \J_u (\qcmd[l+1] - q^l), \label{eq:explicit_force_and_state:force}\\
+q^{l+1} &= q^l + \left(\mb{I} -  \mb{K}_q^{-1}\J_u^\intercal (\J_u \mb{K}_q^{-1} \J_u^\intercal)^{-1}\J_u \right) (\qcmd[l+1] - q^l). \label{eq:explicit_force_and_state:state}
 \end{align}
 \end{subequations}
 
@@ -146,36 +140,36 @@ Null-space projection technique revolves around two projections:
 \begin{subequations}
 
 \begin{align}
-P_R(W) &\coloneqq J_u^\intercal \left(J_u^{W +}\right)^\intercal, \\
-P_N(W) &\coloneqq I - J_u^\intercal \left(J_u^{W +}\right)^\intercal,
+P_R(W) &\coloneqq \J_u^\intercal \left(\J_u^{W +}\right)^\intercal, \\
+P_N(W) &\coloneqq \mb{I} - \J_u^\intercal \left(\J_u^{W +}\right)^\intercal,
 \end{align}
 \end{subequations}
-where $J_u^{W+} \coloneqq W^{-1} J_u^\intercal (J_u W^{-1} J_u^\intercal)^{-1}$ is the pseudo-inverse weighted by a positive-definite $W$. The range and null space of $P_R(W)$ are respectively $R(J_u^\intercal)$ and $N\left(\left(J_u^{W+}\right)^\intercal\right)$, whereas the range and null space of $P_N(W)$ are reversed. Note that such projections can be defined for arbitrary task Jacobians, but we specialize to the contact Jacobian defined in (\ref{eq:contact_jacobian}) without loss of generality.
+where $\J_u^{\mb{W}+} \coloneqq \mb{W}^{-1} \J_u^\intercal (\J_u \mb{W}^{-1} \J_u^\intercal)^{-1}$ is the pseudo-inverse weighted by a positive-definite $\mb{W}$. The range and null space of $P_R(\mb{W})$ are respectively $R(\J_u^\intercal)$ and $N\left(\left(\J_u^{\mb{W}+}\right)^\intercal\right)$, whereas the range and null space of $P_N(\mb{W})$ are reversed. Note that such projections can be defined for arbitrary task Jacobians, but we specialize to the contact Jacobian defined in (\ref{eq:contact_jacobian}) without loss of generality.
 
-For any choice of $W$ and any joint torque $\tauM$, $P_R(W) \tauM \in R(J_u^\intercal)$ generates contact forces, whereas $P_N(W) \tauM$ generates no joint torque in $R(J_u^\intercal)$ after static equilibrium is reached. Choosing an appropriate $W$, however, can provide additional guarantees during the transient into this steady state \cite{dietrich2015overview}. For instance, the \textit{dynamically-consistent} pseudo-inverse $J_u^{M+}$\cite{featherstone1997load}, which uses the robot's mass matrix $M$ for $W$, ensures that 
+For any choice of $\mb{W}$ and any joint torque $\tauM$, $P_R(\mb{W}) \tauM \in R(\J_u^\intercal)$ generates contact forces, whereas $P_N(\mb{W}) \tauM$ generates no joint torque in $R(\J_u^\intercal)$ after static equilibrium is reached. Choosing an appropriate $\mb{W}$, however, can provide additional guarantees during the transient into this steady state \cite{dietrich2015overview}. For instance, the \textit{dynamically-consistent} pseudo-inverse $\J_u^{\mb{M}+}$\cite{featherstone1997load}, which uses the robot's mass matrix $\mb{M}$ for $\mb{W}$, ensures that 
 \begin{equation}
 \label{eq:dynamic_consistency}
-0 \equiv J_u M^{-1} P_N(M) \tauM, \; \forall \tauM.
+0 \equiv \J_u \mb{M}^{-1} P_N(\mb{M}) \tauM, \; \forall \tauM.
 \end{equation}
-Assuming that the dominant effect of $P_N(M) \tauM$ during the transient is to generate acceleration, property (\ref{eq:dynamic_consistency}) guarantees that and the generated acceleration lies inside $N(J_u)$.
+Assuming that the dominant effect of $P_N(\mb{M}) \tauM$ during the transient is to generate acceleration, property (\ref{eq:dynamic_consistency}) guarantees that and the generated acceleration lies inside $N(\J_u)$.
 
 % Analysis for quasi-static systems.
-To determine the appropriate choice of $W$ when the dominant effect of the $P_N(W) \tauM$ during transient is to stretch/contract the virtual spring of a stiffness-controlled robot, we start at the instant $l^+$, immediately after sending the joint angle command $u^l = \qcmd[l+1]$ at time step $l$. At $l^+$, the joint torque can be expressed as 
+To determine the appropriate choice of $\mb{W}$ when the dominant effect of the $P_N(\mb{W}) \tauM$ during transient is to stretch/contract the virtual spring of a stiffness-controlled robot, we start at the instant $l^+$, immediately after sending the joint angle command $u^l = \qcmd[l+1]$ at time step $l$. At $l^+$, the joint torque can be expressed as 
 \begin{equation}
 \label{eq:tau_l_stiffness}
-\tauM^{l^+} = K_q(\qcmd[l+1] - q^l),
+\tauM^{l^+} = \mb{K}_q(\qcmd[l+1] - q^l),
 \end{equation}
 which can be decomposed as 
 \begin{equation}
 \label{eq:tau_l_decomposition}
-\tauM^{l^+} = \underbrace{P_R(W) \tauM^{l^+}}_{\tau_R} + \underbrace{P_N(W) \tauM^{l^+}}_{\tau_N},
+\tauM^{l^+} = \underbrace{P_R(\mb{W}) \tauM^{l^+}}_{\tau_R} + \underbrace{P_N(\mb{W}) \tauM^{l^+}}_{\tau_N},
 \end{equation}
-where $\tau_R \in R(J_u^\intercal)$ generates contact forces, and $\tau_N \in N\left(\left(J_u^{W+}\right)^\intercal\right)$ generates a motion that needs to be in $N(J_u)$.
+where $\tau_R \in R(\J_u^\intercal)$ generates contact forces, and $\tau_N \in N\left(\left(\J_u^{W+}\right)^\intercal\right)$ generates a motion that needs to be in $N(\J_u)$.
 
 Combining (\ref{eq:tau_l_stiffness}) and (\ref{eq:tau_l_decomposition}) yields
 \begin{equation}
 \label{eq:tau_l_combined}
-K_q(\qcmd[l+1] - q^l) = \tau_R +\tau_N.
+\mb{K}_q(\qcmd[l+1] - q^l) = \tau_R +\tau_N.
 \end{equation}
 
 At time instant $(l+1)^-$, when the equilibrium at time step $l+1$ is reached but $u^{l+1}$ has not been commanded, $\tau_N$ has generated a displacement and been dissipated by damping, but $\tau_R$, the generalized force due to contact, remains:
@@ -186,43 +180,43 @@ At time instant $(l+1)^-$, when the equilibrium at time step $l+1$ is reached bu
 Moreover, static equilibrium (\ref{eq:quaistatic_force_balance}) at $(l+1)^-$ dictates that 
 \begin{equation}
 \label{eq:tau_l+1_stiffness}
-\tauM^{(l+1)^-} = K_q(\qcmd[l+1] - q^{l+1}).
+\tauM^{(l+1)^-} = \mb{K}_q(\qcmd[l+1] - q^{l+1}).
 \end{equation}
 
 Combining (\ref{eq:tau_l+1_decomposition}) and (\ref{eq:tau_l+1_stiffness}) yields 
 \begin{equation}
 \label{eq:tau_l+1_combined}
-K_q(\qcmd[l+1] - q^{l+1}) = \tau_R.
+\mb{K}_q(\qcmd[l+1] - q^{l+1}) = \tau_R.
 \end{equation}
 
 Finally, subtracting (\ref{eq:tau_l+1_combined}) from (\ref{eq:tau_l_combined}) gives
 \begin{equation}
 \label{eq:stiffness_consistency_1}
-K_q(q^{l+1} - q^l) = \tau_N = P_N(W) \tauM^{l^+}.
+\mb{K}_q(q^{l+1} - q^l) = \tau_N = P_N(\mb{W}) \tauM^{l^+}.
 \end{equation}
 
-As the motion from $l$ to $l+1$ needs to stay in $N(J_u)$, we need $J_u(q^{l+1} - q^l) \equiv 0$, which implies through (\ref{eq:stiffness_consistency_1}) that
+As the motion from $l$ to $l+1$ needs to stay in $N(\J_u)$, we need $\J_u(q^{l+1} - q^l) \equiv 0$, which implies through (\ref{eq:stiffness_consistency_1}) that
 \begin{equation}
-0 \equiv J_u K_q^{-1}P_N(W) \tauM^{l^+}, \; \forall \tauM^{l^+},
+0 \equiv \J_u \mb{K}_q^{-1}P_N(\mb{W}) \tauM^{l^+}, \; \forall \tauM^{l^+},
 \end{equation}
-which has the same form as dynamic-consistency defined in (\ref{eq:dynamic_consistency}). Not surprisingly, choosing $W = K_q$ ensures the motion generated by $\tau_N$ stays in $N(J_u)$, and the resulting pseudo-inverse $J^{K_q+}$ is called \textit{stiffness-consistent} \cite{dietrich2015overview}.
+which has the same form as dynamic-consistency defined in (\ref{eq:dynamic_consistency}). Not surprisingly, choosing $\mb{W} = \mb{K}_q$ ensures the motion generated by $\tau_N$ stays in $N(\J_u)$, and the resulting pseudo-inverse $\J^{\mb{K}_q+}$ is called \textit{stiffness-consistent} \cite{dietrich2015overview}.
 
-We can solve for $q^{l+1}$ by plugging (\ref{eq:tau_l_stiffness}) into (\ref{eq:stiffness_consistency_1}) and setting $W$ to $K_q$, yielding
+We can solve for $q^{l+1}$ by plugging (\ref{eq:tau_l_stiffness}) into (\ref{eq:stiffness_consistency_1}) and setting $\mb{W}$ to $\mb{K}_q$, yielding
 \begin{equation}
 \label{eq:state_null_space_projection}
-q^{l+1} = q^l + (I - J_u^{K_q+}J_u) (\qcmd[l+1] - q^l).
+q^{l+1} = q^l + (\mb{I} - \J_u^{\mb{K}_q+}\J_u) (\qcmd[l+1] - q^l).
 \end{equation}
 
-Furthermore, as the contact force is the reaction to $\tau_R$, we have $\tau_R = -J_u^\intercal \lambda^{l+1}$, combining this with the definition of $\tau_R$ in (\ref{eq:tau_l_decomposition}) gives
+Furthermore, as the contact force is the reaction to $\tau_R$, we have $\tau_R = -\J_u^\intercal \lambda^{l+1}$, combining this with the definition of $\tau_R$ in (\ref{eq:tau_l_decomposition}) gives
 \begin{equation}
 \label{eq:force_null_space_projection}
-\lambda^{l+1} = -\left(J^{K_q+} \right)^\intercal K_q(\qcmd[l+1] - q^l).
+\lambda^{l+1} = -\left(\J^{\mb{K}_q+} \right)^\intercal \mb{K}_q(\qcmd[l+1] - q^l).
 \end{equation}
 
 It can be shown that (\ref{eq:state_null_space_projection}) and (\ref{eq:force_null_space_projection}) are equivalent to (\ref{eq:explicit_force_and_state:state}) and (\ref{eq:explicit_force_and_state:force}), respectively. This equivalence implies that a controller based on stiffness-consistent projections and a controller (\ref{eq:generic_mpc}) using QP (\ref{eq:quasistatic_dynamics_qp}) as its dynamics constraint share the same underlying dynamics model. Therefore, the QP formulation in Sec. \ref{sec:MPC} is preferred as it can handle inequality constraints.
 
 
-\section{QP Controller with Quasistatic Dynamics \label{sec:MPC}}
+\section{QP Controller with Quasi-static Dynamics \label{sec:MPC}}
 \subsection{Frictionless Contacts}
 To track a reference trajectory $q_\text{ref}(t)$ as closely as possible while respecting dynamics constraints and upper bounds on contact forces, we can specialize the generic optimization-based controller (\ref{eq:generic_mpc}) to the following QP:
 \begin{subequations}
@@ -230,22 +224,22 @@ To track a reference trajectory $q_\text{ref}(t)$ as closely as possible while r
 \begin{align}
 \underset{q^{l+1}, q_{\text{cmd}}^{l+1}, \lambda^{l+1}} {\rm min} \; &\left\|q^{l+1} - q_\text{ref}^{l+1}\right\|^2 + 
 \epsilon \left\|q_{\rm cmd}^{l+1} - q_\text{ref}^{l+1}\right\|^2 , \text{s.t.} \label{eq:mpc_qp1:objective} \\
-&K_q(q^{l+1} - q_\text{cmd}^{l+1}) - J_u^\intercal \lambda^{l+1} = 0 \label{eq:mpc_qp:dynamics1}\\
-&J_u(q^{l+1} - q^l) = 0 \label{eq:mpc_qp:dynamics2}\\
+&\mb{K}_q(q^{l+1} - q_\text{cmd}^{l+1}) - \J_u^\intercal \lambda^{l+1} = 0 \label{eq:mpc_qp:dynamics1}\\
+&\J_u(q^{l+1} - q^l) = 0 \label{eq:mpc_qp:dynamics2}\\
 &\lambda^{l+1} \leq \lambda_\text{max} \label{eq:mpc_qp:force_upper_bound}\\
 &\left|q_\text{cmd}^{l+1} - \qcmd[l]\right| \leq \Delta q_\text{max}. \label{eq:mpc_qp:velocity_upper_bound}
 \end{align}
 \end{subequations}
-Here, the dynamics constraint (\ref{eq:generic_mpc:dynamics_constraint}) consists of (\ref{eq:mpc_qp:dynamics1}) and (\ref{eq:mpc_qp:dynamics2}), which are the KKT conditions (\ref{eq:dynamics_qp_kkt}) of the quasistatic dynamics (\ref{eq:quasistatic_dynamics_qp}). Constraint (\ref{eq:mpc_qp:force_upper_bound}) places an upper bound on contact forces. The last constraint (\ref{eq:mpc_qp:velocity_upper_bound}) bounds how quickly $\qcmd$ changes.
+Here, the dynamics constraint (\ref{eq:generic_mpc:dynamics_constraint}) consists of (\ref{eq:mpc_qp:dynamics1}) and (\ref{eq:mpc_qp:dynamics2}), which are the KKT conditions (\ref{eq:dynamics_qp_kkt}) of the quasi-static dynamics (\ref{eq:quasistatic_dynamics_qp}). Constraint (\ref{eq:mpc_qp:force_upper_bound}) places an upper bound on contact forces. The last constraint (\ref{eq:mpc_qp:velocity_upper_bound}) bounds how quickly $\qcmd$ changes.
 
 In the objective (\ref{eq:mpc_qp1:objective}), the first term penalizes deviation at $l+1$ from the reference trajectory. The second term, weighted by a small positive scalar $\epsilon$, adds regularization without which the objective would become semi-definite. To see why, we re-write $\left(q^{l+1} - q_\text{ref}^{l+1}\right)$ by expressing $q^{l+1}$ explicitly as a function of $q_\text{cmd}^{l+1}$ using (\ref{eq:state_null_space_projection}):
 \begin{equation}
 \label{eq:q_minus_q_ref}
-q^{l+1} - q_\text{ref}^{l+1} = (I - J_u^{K_q+}J_u) (q^{l+1}_\text{cmd} - q^l) + (q^{l} - \qref[l+1]),
+q^{l+1} - q_\text{ref}^{l+1} = (\mb{I} - \J_u^{\mb{K}_q+}\J_u) (q^{l+1}_\text{cmd} - q^l) + (q^{l} - \qref[l+1]),
 \end{equation}
 where the second term is a constant, and the first term multiplies $(q_\text{cmd}^{l+1} - q^l)$ by a projection which has a non-zero null space.
 
-In the quasistatic dynamics (\ref{eq:quasistatic_dynamics_qp}), expressing contact constraints as equality constraints (\ref{eq:quasistatic_dynamics_qp:equality_constraint}) and contact forces as the constraints' Lagrange multipliers implies that the contacts are bi-lateral and frictionless. In reality, however, contacts are uni-lateral and frictional.
+In the quasi-static dynamics (\ref{eq:quasistatic_dynamics_qp}), expressing contact constraints as equality constraints (\ref{eq:quasistatic_dynamics_qp:equality_constraint}) and contact forces as the constraints' Lagrange multipliers implies that the contacts are bi-lateral and frictionless. In reality, however, contacts are uni-lateral and frictional.
 
 
 The bi-lateralness of (\ref{eq:quasistatic_dynamics_qp:equality_constraint}) is less concerning. As contact sensors are inevitably noisy, only contact forces above a threshold are added to QP (\ref{eq:mpc_qp1}). In addition, by (\ref{eq:explicit_force_and_state:force}), the change in contact force is bounded as long as $\left|\qcmd[l+1] - q^l\right|$ is bounded, and the boundedness of $\left|\qcmd[l+1] - q^l\right|$ is enforced by (\ref{eq:mpc_qp:velocity_upper_bound}). Therefore, as long as the bound $\Delta q_\text{max}$ is sufficiently small, we do not need to worry about contact forces flipping sign in the middle of a control step. 
@@ -253,7 +247,7 @@ The bi-lateralness of (\ref{eq:quasistatic_dynamics_qp:equality_constraint}) is 
 On the other hand, naively ignoring friction will severely impact the performance of the controller, which motivates the mitigating measures detailed in the next subsection.
 
 \subsection{Frictional Contacts}
-It is possible to model friction contact in quasistatic dynamics \cite{pang2021convex}, but control through a frictional contact requires estimating the contact normal and the friction coefficient, in addition to estimating contact forces. This requires either more sophisticated whole-arm contact sensors, or making additional assumptions about the environments that make the control-estimation pipeline more brittle. 
+It is possible to model friction contact in quasi-static dynamics \cite{pang2021convex}, but control through a frictional contact requires estimating the contact normal and the friction coefficient, in addition to estimating contact forces. This requires either more sophisticated whole-arm contact sensors, or making additional assumptions about the environments that make the control-estimation pipeline more brittle. 
 
 Therefore, we will retain the simpler frictionless contact model for controlling through a frictional contact, and mitigate the side effects of the wrong contact model by modifying the frictionless QP (\ref{eq:mpc_qp1}) to
 \begin{subequations}
@@ -278,33 +272,31 @@ q_\text{cmd}^{l+1} - \qref[l+1] = \left(q_\text{cmd}^{l+1} - q^l \right) - \left
 
 It is also easy to see from (\ref{eq:q_minus_q_ref}) that
 \begin{equation}
-\Delta q^{l+1} = (I - J_u^{K_q+}J_u) \Delta q_\text{cmd}^{l+1}.
+\Delta q^{l+1} = (\mb{I} - \J_u^{\mb{K}_q+}\J_u) \Delta q_\text{cmd}^{l+1}.
 \end{equation}
 The first term in the original objective (\ref{eq:mpc_qp1:objective}) thus becomes
 \begin{equation}
 \begin{aligned}
 q^{l+1} - \qref[l+1] =& \Delta q^{l+1} - \Delta \qref[l+1] \\
-=& (I - J_u^{K_q+}J_u) \Delta q_\text{cmd}^{l+1} - \Delta \qref[l+1],
+=& (\mb{I} - \J_u^{\mb{K}_q+}\J_u) \Delta q_\text{cmd}^{l+1} - \Delta \qref[l+1],
 \end{aligned}
 \end{equation}
-where $(I - J_u^{K_q+}J_u)$ is the projection into $N(J_u)$ along $R\left(J_u^{K_q+}\right)$, as shown in Fig. \ref{fig:frictional_contact_objective}b. 
+where $(\mb{I} - \J_u^{\mb{K}_q+}\J_u)$ is the projection into $N(\J_u)$ along $R\left(\J_u^{\mb{K}_q+}\right)$, as shown in Fig. \ref{fig:frictional_contact_objective}b. 
 
-As a result, minimizing $\norm{\Delta q_\text{cmd}^{l+1} - \Delta \qref[l+1]}^2$ encourages $\Delta q_\text{cmd}^{l+1}$ to be close to $\Delta \qref[l+1]$ in the entire vector space. In contrast, when $\norm{\Delta q^{l+1} - \Delta \qref[l+1]}^2$ is used as the cost, only the distance between $\Delta \qref[l+1]$ and the component of $\Delta q_\text{cmd}^{l+1}$ along $N(J_u)$ is minimized.
+As a result, minimizing $\norm{\Delta q_\text{cmd}^{l+1} - \Delta \qref[l+1]}^2$ encourages $\Delta q_\text{cmd}^{l+1}$ to be close to $\Delta \qref[l+1]$ in the entire vector space. In contrast, when $\norm{\Delta q^{l+1} - \Delta \qref[l+1]}^2$ is used as the cost, only the distance between $\Delta \qref[l+1]$ and the component of $\Delta q_\text{cmd}^{l+1}$ along $N(\J_u)$ is minimized.
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.80\linewidth]{figures/04_control/frictional_contact_objective.png}
-\caption{\textbf{(a)}: The reference trajectory brings the robot into contact at $C$. Due to friction, the contact normal $n$ and the contact force direction $u$ are different. Therefore, the commanded velocity at $C$ can separate from the obstacle even when the angle between $u$ and ${}^W v^C_\text{cmd}$ is greater than $\pi / 2$. \textbf{(b)}: Definitions of $\Delta q_\text{ref}$, $\Delta q_\text{cmd}$ and $\Delta q$. The range and null space of the projection $I - J_u^{K_q+}J_u$ are $N(J_u)$ and $R\left(J_u^{K_q+}\right)$, respectively.}
+\caption{\textbf{(a)}: The reference trajectory brings the robot into contact at $C$. Due to friction, the contact normal $n$ and the contact force direction $u$ are different. Therefore, the commanded velocity at $C$ can separate from the obstacle even when the angle between $u$ and ${}^W v^C_\text{cmd}$ is greater than $\pi / 2$. \textbf{(b)}: Definitions of $\Delta q_\text{ref}$, $\Delta q_\text{cmd}$ and $\Delta q$. The range and null space of the projection $\mb{I} - \J_u^{\mb{K}_q+}\J_u$ are $N(\J_u)$ and $R\left(\J_u^{\mb{K}_q+}\right)$, respectively.}
 \label{fig:frictional_contact_objective}
 \end{figure}
 
 \begin{figure*}[t!]
-\vspace{0.2cm}
 \centering
 \includegraphics[width=1.0\textwidth]{figures/04_control/experiments_high_res.png}
 \caption{(\textbf{a}): mug placement task. (\textbf{b}): mug moving task. Contacts are highlighted in red boxes. Blue arrows denote the direction of end effector velocity. For both tasks, the photographs on the left show where the real robot makes contact while executing the task. With collision geometry disabled, the simulation frames on the right show how much penetration would happen if the original trajectory were strictly followed. Videos of the real robot executing the tasks are included in the attachment.}
 \label{fig:experiments}
-\vspace{-0.6cm}
 \end{figure*}
 
 
@@ -325,9 +317,9 @@ where $w_\text{max}$ is the upper bound on $w^l$ and $\alpha$ is the forget rate
 \section{Experiments}
 In this section, we demonstrate the advantages of the proposed contact-aware controller through two tasks that involve unexpected contact with the environment, which are shown in Fig. \ref{fig:experiments}. In both experiments, $\qcmd$ is tracked using the iiwa's factory impedance controller. The factory controller's stiffness is set to [800, 600, 600, 600, 400, 200, 200] $\mathrm{N \cdot m/rad}$, from base joint to wrist joint. The proposed contact-aware controller runs at 200Hz. The external contacts are estimated from iiwa's external torque measurements using the Contact Particle Filter \cite{manuelli2016localizing}, which runs at around 100Hz. QPs are constructed using Drake's \code{MathematicalProgram} interface \cite{drake} and solved by GUROBI \cite{gurobi}. 
 
-In order to reduce sensitivity to measurement noise, only contact forces with norm $f_i \geq f_\text{threshold}$ are considered when constructing the contact Jacobian $J_u$ (\ref{eq:contact_jacobian}). We have chosen $f_\text{threshold}=5\mathrm{N}$, and set the upper bound on contact forces in (\ref{eq:mpc_qp:force_upper_bound}) to be $\lambda_{\text{max}}=15\mathrm{N}$. Ignoring contacts with small contact forces can be justified by the passivity of the robot's internal controller \cite{albu2007unified}, which ensures stability in the presence of external contacts.
+In order to reduce sensitivity to measurement noise, only contact forces with norm $f_i \geq f_\text{threshold}$ are considered when constructing the contact Jacobian $\J_u$ (\ref{eq:contact_jacobian}). We have chosen $f_\text{threshold}=5\mathrm{N}$, and set the upper bound on contact forces in (\ref{eq:mpc_qp:force_upper_bound}) to be $\lambda_{\text{max}}=15\mathrm{N}$. Ignoring contacts with small contact forces can be justified by the passivity of the robot's internal controller \cite{albu2007unified}, which ensures stability in the presence of external contacts.
 
-\subsection{Mug placement task (Fig. \ref{fig:experiments}a)}
+\subsection{Mug Placement Task (Fig. \ref{fig:experiments}a)}
 This task is defined by an end-effector pose trajectory $\left({}^W R^{T_r} (t), {}^W p^{T_r}(t)\right)$, where $T_r$ is the reference for the tool frame $T$, ${}^W R^{T_r}$ is the orientation of frame $T_r$ w.r.t. the world frame $W$, and $ {}^W p^{T_r}$ is the position of the origin of $T_r$ in world frame. It is straightforward to modify the tracking term in the frictional QP objective (\ref{eq:mpc_qp2:objective}) to minimize the pose difference between frame $T$ and its reference $T_r$, as described in \cite{koolen2016design} \cite[Chapter 3]{tedrake2021manipulation}.
 
 The robot starts with a mug held in the gripper. It then (\textbf{i}) reaches down ($-z$ of world frame) by $0.22m$ in 4s, (\textbf{ii}) opens the gripper and drops the mug on the cart below the table in 2s, and (\textbf{iii}) moves back up to where it started in 4s. The orientation of the gripper is kept constant throughout the trajectory. As shown in Fig. \ref{fig:experiments}a, the ``wrist'' (link 6) of the robot collides with the edge of the table as the gripper moves down and up.
@@ -346,37 +338,32 @@ As shown in Fig. \ref{fig:mug_placement_damped_lsq_vs_ours}, except during the i
 As shown in Fig. \ref{fig:mug_placement_tracking_error}, compared with the baseline, the contact-aware controller produces significantly less tracking error in the presence of external contact.
 
 \begin{figure}
-\vspace{-0.2cm}
 \centering
 \includegraphics[width=1.0\linewidth]{figures/04_control/mug_placement_tracking_error.pdf}
 \caption{\textbf{mug placement task}. \textbf{Left}: position tracking error. \textbf{Right}: orientation tracking error. }
-\vspace{-0.6cm}
 \label{fig:mug_placement_tracking_error}
 \end{figure}
 
-\vspace{-0.1cm}
-\subsection{Mug moving task (Fig. \ref{fig:experiments}b) \label{sec:mug_holding_results}} 
+\subsection{Mug Moving Task (Fig. \ref{fig:experiments}b) \label{sec:mug_holding_results}} 
 This task is defined by a joint-space trajectory $q_{\text{ref}}(t)$, with the goal of moving the mug along a straight line while keeping the mug orientation constant. The 16s trajectory $q_{\text{ref}}(t)$ is an interpolation between joint-space knot points obtained by inverse kinematics. As shown in Fig. \ref{fig:experiments}b, to move the mug to the desired destination, the robot needs to first establish a contact with the top face of the table, and then breaks contact with the side of the table.
 
 The baseline we are comparing against is the class of controllers trying to achieve similar goals as ours but uses null-space projection, such as \cite{jorda2019contact}. As null-space projection cannot handle inequality constraints, the contact force upper bound is usually enforced by an equality constraint which sets the contact force to $\lambda_\text{max}$. When commanded to break contact by the reference trajectory, i.e.
 \begin{equation}
 \label{eq:break_away}
-    J_u (q_\text{ref}^{l+1} - q^l) \leq 0,
+    \J_u (q_\text{ref}^{l+1} - q^l) \leq 0,
 \end{equation}
 the contact force constraint needs to be abruptly removed in order to continue to track the reference trajectory \cite{jorda2019contact}. This can lead to large joint velocity during separation, as shown in Fig. \ref{fig:jorda_vs_ours}.
 
 In contrast, the proposed QP controller does not explicitly make the decision to break contact based on (\ref{eq:break_away}), instead the break of contact comes naturally as a consequence of solving QP (\ref{eq:mpc_qp2}) with the inequality constraints on contact forces (\ref{eq:mpc_qp:force_upper_bound}). As shown in Fig. \ref{fig:jorda_vs_ours}, when the robot separates from the table, the drop in $\norm{f_W^C}$ occurs gradually with our QP controller, but abruptly with a null-projection-based controller.
 \begin{figure}[h]
-\vspace{-0.2cm}
 \centering
 \includegraphics[width=0.98\linewidth]{figures/04_control/ours_vs_jorda.pdf}
 \caption{Comparison between our QP controller and null-space projection-based control in the \textbf{mug moving task}. \textbf{Top}: contact force norm $\norm{f_W^C}$. The red dashed line represents $f_\text{threshold}$ and the green dashed line $\lambda_\text{max}$. Both controllers can keep $\norm{f_W^C}$ near $\lambda_\text{max}$ when the robot is in contact. \textbf{Bottom}: robot joint velocity norm $\norm{v_q}$ during contact separation (from $t=10s$ to $t=14s$). Note the velocity spike in the null-space projection controller. In both plots, the solid lines are the mean of 10 runs; the shaded regions around the lines represent the maximum and minimum values of all runs.}
 \label{fig:jorda_vs_ours}
-\vspace{-0.7cm}
 \end{figure}
 
 
-\section{Conclusions}
+\section{Conclusion}
 We have presented a contact-aware controller that reconciles trajectory tracking with safety in unexpected contacts. The proposed controller is formulated as a QP with a quadratic cost on tracking error, a quasi-static model of the robot dynamics as constraints, and upper bounds on contact forces.
 
 The tasks for hardware experiments are designed based on our vision of future motion planners: they are comprised of smooth, simple trajectories defined by only a few knot points. We have shown that the proposed controller is able to keep both the tracking error and contact forces small if the robot makes an accidental contact. In addition, our controller outperforms controllers based on null-space projection when an established contact needs to be broken as the robot follows a reference trajectory.

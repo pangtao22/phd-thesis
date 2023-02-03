@@ -473,7 +473,7 @@ where $\partial f/\partial x$, and $\partial f/\partial u$ are Jacobians of the 
 We estimate the gradients using least-squares when $\rho$ is Gaussian:
 \begin{equation}
 \label{eq:montecarlo_ABc_zero}
-\mathbf{A}_\rho,\mathbf{B}_\rho  = \underset{\mathbf{A,B}} {\minimize}\textstyle\sum^N_{i=1}
+\mathbf{A}_\rho,\mathbf{B}_\rho  = \underset{\mathbf{A,B}} {\text{argmin}}\textstyle\sum^N_{i=1}
  \| f(\bar{x}+w_i^x,\bar{u}+w_i^u) - \mathbf{A} w_i^x - \mathbf{B} w_i^u - c_\rho\|^2_2
 \end{equation}
 where $c_\rho$ is computed with \eqref{eq:montecarlo_ABc:c}.

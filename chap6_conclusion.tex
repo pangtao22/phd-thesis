@@ -1,1 +1,21 @@
 \chapter{Conclusion} 
+We motivated our work by noting the stark contrast between the promise of robots that are capable of contact-rich interactions, and the reality that most robotic manipulators are simply executing grasps connected by collision-free trajectories. Furthermore, the recent empirical success of RL in contact-rich settings has made it even more desirable and urgent to seek deeper understanding of contact-rich manipulation from a model-based perspective. 
+
+By analyzing the successes and pitfalls of existing model-based methods for contact-rich planning, and understanding how RL was able to alleviate such pitfalls, we have identified two key ingredients for successful contact-rich planning: (\textbf{i}) smoothing of the non-smooth contact dynamics, and (\textbf{ii}) global exploration through contact dynamics constraints. By proposing a sampling-based motion planner guided by a smoothed contact dynamics model, we have shown that traditional model-based approaches can be effective in contact-rich manipulation planning. Compared to existing tools in RL which use heavy offline computation on the order of hours or days, our contribution offers a powerful alternative in the spectrum of solutions by enabling efficient online planning in the order of a minute while being generalizable with respect to environments and tasks. 
+
+At the heart of our model-based planner is CQDC, a novel contact dynamics model that is convex, quasi-static, and differentiable. In contrast with the standard second-order dynamics, CQDC removes transients that can lead to myopic linearizations which are uninformative about long-term planning.
+Through a number of theoretical arguments and empirical studies, we have shown the efficacy of our contact model. We have further shown that by inspecting the structure in our proposed model, we can analytically smooth out the contact dynamics with a log-barrier relaxation. With experiments, we have shown that our method of analytic smoothing has computational benefits over randomized smoothing.
+
+In our analysis of existing methods for model-based contact-rich planning, we observed that smoothing has been tied to local trajectory optimization. Due to its weakness to local minima, local trajectory optimization has been less effective in difficult problems compared to RL-based approaches that attempt to perform global search. On the other hand, the SBMP methods for contact-rich systems have explicitly considered contact modes which fall into the pitfall of mode enumeration. Our contribution fills in a gap in existing methods by combining mode smoothing with RRT, where local approximation to the smooth surrogate was used to guide the exploration process of RRT via the local Mahalanobis metric.
+
+By enabling SBMP to effectively search through contact dynamics constraints guided by smoothed CQDC, we have enabled efficient global motion planning for highly contact-rich and high-dimensional systems that were previously not achievable by existing model-based or RL-based methods. We believe that in the future, a highly optimized version of our planner can be used to perform real-time motion planning, or be used to guide policy search. With this capability, we hope to enable robots to find contact-rich plans online in previously unseen environments within seconds of planning time.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Planning is only part of the ``sense-plan-act'' pipeline that powers almost every modern robot. Although Chapter 4 and 5 only dabble in sensing and control, they shed light on what a complete contact-rich robotic system might look like. For instance, we believe that tactile sensing is needed to accurately determine contact forces, points and normals; and that a controller, which is responsible for short-horizon feedback, may function well with only local contact geometry and simplified contact dynamics. 
+
+
+We hope that our work has taken a small yet meaningful step towards building robots capable of human-level contact-rich interactions, which we hope will help make our world a better place. 
+
+
+
+

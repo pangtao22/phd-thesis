@@ -49,8 +49,11 @@
 \newcommand{\Extend}{\mathtt{Extend}}
 \newcommand{\ContactSample}{\mathtt{ContactSample}}
 
+% aliases
+\newcommand{\mb}[1]{\mathbf{#1}}
 
-% Chapter 4 control
+
+% Control
 \newcommand{\qcmd}[1][]{q_{\text{cmd}}^{#1}}
 \newcommand{\qref}[1][]{q_{\text{ref}}^{#1}}
 \newcommand{\tauE}{\tau_{\text{ext}}}
@@ -59,7 +62,7 @@
 \newcommand{\quantity}[4]{{}^{#2}{#1}^{#3}_{#4}} % 1: quantity name, 2: 'from' frame, 3: 'to' frame, 4: 'expressed-in' frame.
 \newcommand{\transpose}[1]{\left({#1}\right)^\intercal}
 
-% Chapter 5 
+% Sensing
 \newcommand{\numcontact}{N} % number of contacts
 \newcommand{\contacts}{P} % collection of contacts
 \newcommand{\contact}[1]{p^{#1}} % contact location
@@ -67,11 +70,11 @@
 \newcommand{\real}{\mathbb{R}}
 \newcommand{\numjoints}{{n_q}} % number of joints in robot
 \newcommand{\pull}{b}  % pull binary
-\newcommand{\binary}{\mathbb{B}} 
+\newcommand{\binary}{\{0, 1\}} 
 \newcommand{\ones}{\mathbf{1}} 
 \newcommand{\transp}{^\intercal} 
 \newcommand{\normal}[1]{n_i} % surface normal
-\newcommand{\jackobian}[1]{{J}_i} % Jacobian
+\newcommand{\jackobian}[1]{\mathbf{J}_i} % Jacobian
 \newcommand{\minpull}{\epsilon_\text{pull}^\text{min}}
 \newcommand{\maxpull}{\epsilon_\text{pull}^\text{max}}
 \newcommand{\minpush}{\epsilon_\text{push}^\text{min}}
@@ -80,6 +83,6 @@
 \newcommand{\dqmax}{\deltaq^\text{max}}
 \newcommand{\dpos}{\delta p} % change in pose
 
-\newcommand{\pCbar}{\bar{p}_C}
+\newcommand{\pCbar}{p_{C}}
 \newcommand{\pC}{{p}_C}
 \newcommand{\fC}{{f}_C}
