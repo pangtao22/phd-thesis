@@ -79,13 +79,13 @@
 \ifx\files\all \typeout{Including all files.} \else %\typeout{Including only \files.} \includeonly{\files} \fi
 
 \begin{document}
+\input{commands.tex}
 \include{cover}
 % Some departments (e.g. 5) require an additional signature page.  See
 % signature.tex for more information and uncomment the following line if
 % applicable.
 % \include{signature}
 \pagestyle{plain}
-\input{commands.tex}
 \include{contents}
 \include{chap1_intro}
 \include{chap2_quasi_static_dynamics}
