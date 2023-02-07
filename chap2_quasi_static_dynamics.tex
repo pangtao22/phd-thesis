@@ -55,8 +55,8 @@ Anitescu's convex relaxation exactly reproduces Coulomb friction when the contac
 
 The popular MuJoCo simulator\cite{todorov2012mujoco, todorov2014convex} solves a convex program that closely resembles the dual of Anitescu's formulation \cite[Appendix B]{underactuated}. Moreover, Mujoco also adds regularization on contact forces to the objective function in order to improve numerical conditioning and make the dynamics invertible. However, the regularization introduces non-physical behaviors such as ``force at a distance'' that are harder to control as they are induced by many hyper-parameters \cite{kolbert2016experimental}. 
 
-Recently, Castro \textit{et al.} developed an unconstrained convex formulation of contact dynamics \cite{castro2021unconstrained} that combines many of the nice features from MuJoCo \cite{todorov2012mujoco} and Anitescu's convex relaxation \cite{anitescu2006optimization}. For instance, Castro's primal formulation is similar to Anitescu's; the removal of friction cone constraints using a projection function is inspired by a similar technique from MuJoCo. 
-Castro's formulation is designed from ground up for efficient and accurate physics simulation, providing physical interpretations and units to the contact force regularization parameters originally proposed by MuJoCo.
+Recently, Castro \textit{et al.} developed an unconstrained convex formulation of contact dynamics \cite{castro2021unconstrained} that combines many of the nice features from MuJoCo \cite{todorov2012mujoco} and Anitescu's convex relaxation \cite{anitescu2006optimization}. For instance, Castro's primal formulation is similar to Anitescu's; the contact force regularization and the removal of friction cone constraints using a projection function are inspired by similar techniques from MuJoCo. 
+Castro's formulation is designed from ground up for efficient and accurate physics simulation. For instance,  providing physical interpretations and units to the contact force regularization parameters originally proposed by MuJoCo.
 % Similar to MuJoCo, Castro's unconstrained formulation has regularization on contact forces. However, Castro proposed a rigorous methodology for setting the regularization in a way that respects simulation accuracy. 
 
 
@@ -303,14 +303,19 @@ Fig. \ref{fig:bond_graph} shows bond graphs of a 1-DOF quasi-static robot pushin
 \subsection{Experimental Evaluation} \label{sec:quasi_static:experiments}
 We want to understand the extent to which simulation accuracy is affected by the ``boundary layer'' due to Anitescu's convex relaxation of the Coulomb friction constraint, which has been illustrated in Sec. \ref{sec:quasi_static:artifacts}. By comparing the proposed CQDC dynamics and a quasi-static LCP formulation on the 2D parallel gripper system using a trajectory that involves multiple contact mode changes, we show that the difference between the two friction formulations is small for typical manipulation tasks.
 
-We also want to ensure that quasi-static simulations stay close to their second-order counterparts for typical manipulation tasks. To this end, we compare the CQDC dynamics against a high-fidelity second-order simulator, Drake's \code{MultibodyPlant} (MBP). To make the comparison as fair as possible, we turn on SAP \cite{castro2021unconstrained} in MBP. SAP is MBP's latest contact dynamics solver with implicit integration for PD controllers\footnote{
-At the time of writing this thesis, implicit PD controller is still an experimental feature of Drake, pending the merge of \url{https://github.com/RobotLocomotion/drake/pull/17674}.}. Our comparison shows that both CQDC and SAP are stable at large integration step sizes (up to $0.5\mathrm{s}$), but CQDC is better at respecting non-penetration constraints as the step size gets larger.
+We also want to ensure that quasi-static simulations stay close to their second-order counterparts for typical manipulation tasks. To this end, we compare the CQDC dynamics against a high-fidelity second-order simulator, Drake's \code{MultibodyPlant} (MBP). To make the comparison as fair as possible, we turn on the semi-analytic primal (SAP) solver \cite{castro2021unconstrained} in MBP. Similar to CQDC, SAP uses Anistecu's convex relaxation of friction constraints \cite{anitescu2006optimization}, and supports implicit integration for PD controllers\footnote{
+At the time of writing this thesis, implicit PD controller is still an experimental feature of Drake, pending the merge of \url{https://github.com/RobotLocomotion/drake/pull/17674}.
+Implicit integration provides stability at much larger step sizes than explicit integration. The latter has been the default integration scheme in Drake due to the separation of plant and controller into individual systems. In our earlier work \cite{pang2021convex}, we compared CQDC which uses implicit integration against Drake's MBP, which is an unfair comparison due to the difference in integration schemes. 
+}.
+Our comparison shows that both CQDC and SAP are stable at large integration step sizes (up to $0.5\mathrm{s}$), but CQDC seems to be better at respecting non-penetration constraints as the step size gets larger, possibly because CQDC enforces non-penetration constraints directly on positions rather than on velocities.
 
 
 \subsubsection{2D Parallel Gripper}
-We study the ``boundary layer'' effect of the CQDC dynamics by comparing it against an LCP-based quasi-static formulation \cite{pang2021convex} which enforces the same object and robot equations of motion in \eqref{eq:q_dynamics_eom}, but models friction using linear complementarity constraints \cite{stewart1996implicit} instead of the cone complementarity constraints \eqref{eq:friction_constraints}.
+We study the ``boundary layer'' effect of the CQDC dynamics by comparing it against an LCP-based quasi-static formulation \cite{pang2021convex} which enforces the same object and robot equations of motion in \eqref{eq:q_dynamics_eom}, but models friction using linear complementarity constraints \cite{stewart1996implicit} instead of the cone complementarity constraints \eqref{eq:friction_constraints}. 
 
-The comparison is done on the 2D grasping example introduced in Fig. \ref{fig:gripper_ball_schematics} using a gripper trajectory that induces multiple contact mode changes between the fingers and the sphere. As the system is planar, we use CQDC's QP formulation \eqref{eq:q_dynamics_planar_qp} instead of the SOCP formulation (\ref{eq:q_dynamic_socp}). The simulation time step $h$ is set to $0.01\mathrm{s}$; the weight of the sphere is $10\mathrm{N}$; the stiffness for all actuated DOFs is $1000 \mathrm{N / m}$ and a friction coefficient of $0.5$ is used for all contacts. The regularization constant $\epsilon$ in \eqref{eq:q_dynamics_eom:u} is set to 0. We will use $c_{\mathrm{n}_i} \coloneqq \lambda_{\mathrm{n}_i} / h$ and $c_{\mathrm{f}_i} \coloneqq \lambda_{\mathrm{t}_i} / h$ to denote the normal and tangent components of the contact forces.
+The comparison is done on the 2D grasping example introduced in Fig. \ref{fig:gripper_ball_schematics} using a gripper trajectory that induces multiple contact mode changes between the fingers and the sphere. As the system is planar, CQDC's SOCP formulation \eqref{eq:q_dynamic_socp} reduces to the QP formulation \eqref{eq:q_dynamics_planar_qp}. We use the QP formulation for the comparison in this example. 
+
+The simulation time step $h$ is set to $0.01\mathrm{s}$; the weight of the sphere is $10\mathrm{N}$; the stiffness for all actuated DOFs is $1000 \mathrm{N / m}$ and a friction coefficient of $0.5$ is used for all contacts. The regularization constant $\epsilon$ in \eqref{eq:q_dynamics_eom:u} is set to 0. We will use $c_{\mathrm{n}_i} \coloneqq \lambda_{\mathrm{n}_i} / h$ and $c_{\mathrm{f}_i} \coloneqq \lambda_{\mathrm{t}_i} / h$ to denote the normal and tangent components of the contact forces.
 
 \begin{figure}
 \centering
@@ -320,7 +325,6 @@ Recall that $x_l$ and $u_l$ are respectively the commanded and actual $x$-coordi
 The right finger is not shown, as the motions and forces of the left and right fingers are symmetric about the $y$-axis. 
 The green dashed vertical lines indicate contact mode changes: separation to sticking at $t=0.03\mathrm{s}$; sticking to sliding at $t=0.13\mathrm{s}$; sliding to sticking at $t=0.23\mathrm{s}$.}
 \label{fig:xy_cmd_vs_xy_true}
-\vspace{-0.5cm}
 \end{figure}
 
 As shown in Fig. \ref{fig:xy_cmd_vs_xy_true}, the grippers start $0.006\mathrm{m}$ away from the surface of the sphere. They are first commanded to translate horizontally, touching the sphere at $t = 0.03\mathrm{s}$. The grippers continue to squeeze the object until $t = 0.08 \mathrm{s}$. Accordingly, $c_{\mathrm{n}_1}$ grows from $0\mathrm{N}$ to $10\mathrm{N}$, while $\phi_1$ stays at 0. As shown in Fig. \ref{fig:contact_force_distance}, this behavior is reproduced by both the LCP formulation and the CQDC dynamics \eqref{eq:q_dynamics_planar_qp}.
@@ -373,11 +377,11 @@ For different simulation step sizes $h$, the mean errors between simulated and r
 
 
 \subsubsection{Box Stacking with Iiwa}
-Our second comparison between CQDC and SAP focuses on a complex 3D system with many contacts, as shown in Fig. \ref{fig:iiwa_cube_stacking}. The system has 10 cubes and 69 DOFs. The task is the robot picking up the red\&grey cube and placing it on the stack. There is on average 56 contacts per time step during the execution of the task.
+Our second comparison between CQDC and SAP focuses on a complex 3D system with many contacts, as shown in Fig. \ref{fig:iiwa_cube_stacking}. The system has 10 cubes and 69 DOFs. The task is the robot picking up the red-and-grey cube and placing it on the stack. There is on average 56 contacts per time step during the execution of the task.
 \begin{figure}
 \centering
 \includegraphics[width=0.75\linewidth]{figures/02_quasi_static_dynamics/start_and_final_configurations.png}
-\caption{KUKA IIWA robot stacking cubes. The red\&grey cube has a quadrant colored grey to indicate its orientation. The red\&grey cube starts off on the ground (\textbf{a}) and is placed on a stack of cubes and rotated by 90 degrees (\textbf{b}).}
+\caption{KUKA IIWA robot stacking cubes. The red-and-grey cube has a quadrant colored grey to indicate its orientation. The red-and-grey cube starts off on the ground (\textbf{a}) and is placed on a stack of cubes and rotated by 90 degrees (\textbf{b}).}
 \label{fig:iiwa_cube_stacking}
 \end{figure}
 
@@ -388,7 +392,7 @@ In contrast, $\Delta (q_\mathrm{SAP}^\mathrm{u}, q_\mathrm{GT}^\mathrm{u})$ beco
 \begin{figure}
 \centering
 \includegraphics[width=0.8\linewidth]{figures/02_quasi_static_dynamics/error_vs_time_step.pdf}
-\caption{Angular and translational mean error of the pose of the red\&grey box, $\Delta (q_\mathrm{CQDC/SAP}^\mathrm{u}, q_\mathrm{GT}^\mathrm{u})$, at different step sizes $h$.
+\caption{Angular and translational mean error of the pose of the red-and-grey box, $\Delta (q_\mathrm{CQDC/SAP}^\mathrm{u}, q_\mathrm{GT}^\mathrm{u})$, at different step sizes $h$.
 As shown in Fig. \ref{fig:iiwa_cube_stacking}, the box is picked up, rotated, and placed on the stack of cubes.
 The ground truth trajectory, $q_\mathrm{GT}^\mathrm{u}$, is defined as the trajectory generated by SAP with $h=5\times10^{-5}\mathrm{s}$.
 In the computation of the mean error $\Delta(\cdot, \cdot)$, the distance function $d(\cdot, \cdot)$ is the Euclidean 2-norm for translation, and the absolute difference in angle for rotation.
@@ -396,7 +400,7 @@ In the computation of the mean error $\Delta(\cdot, \cdot)$, the distance functi
 \label{fig:error_vs_time_step}
 \end{figure}
 
-The reason behind the large error of SAP at larger step sizes is shown in Fig. \ref{fig:iiwa_cube_stacking_sap_vs_cqdc}. With SAP, it appears that contacts become softer as $h$ increases, eventually leading to boxes sinking into each other and the ground. 
+The reason behind the larger error of SAP at larger step sizes is shown in Fig. \ref{fig:iiwa_cube_stacking_sap_vs_cqdc}. With SAP, it appears that contacts become softer as $h$ increases, eventually leading to boxes sinking into each other and the ground. 
 \begin{figure}
 \centering
 \includegraphics[width=1.0\linewidth]{figures/02_quasi_static_dynamics/sap_vs_cqdc.png}
@@ -409,7 +413,9 @@ Good simulation accuracy by the CQDC dynamics at large $h$ is also evident in th
 \begin{figure}
 \centering
 \includegraphics[width=0.9\linewidth]{figures/02_quasi_static_dynamics/box0_pose.pdf}
-\caption{Trajectories of the red cube in Fig. \ref{fig:iiwa_cube_stacking}, including the ground truth (GT) and the ones generated using the CQDC dynamics with different step sizes $h$. $x$, $y$ and $z$ are the cube's center of mass coordinates in world frame. Angle comes from the axis-angle representation of the cube's orientation relative to world frame. Here the angle plot represents a rotation about the world $y$-axis by 90 degrees.}
+\caption{Trajectories of the red cube in Fig. \ref{fig:iiwa_cube_stacking}, including the ground truth (GT) and the ones generated using the CQDC dynamics with different step sizes $h$. $x$, $y$ and $z$ are the cube's center of mass coordinates in world frame. Angle comes from the axis-angle representation of the cube's orientation relative to world frame. Here the angle plot represents a rotation about the world $y$-axis by 90 degrees. The larger $y$ error at $h=0.5\mathrm{s}$ is caused by the gripper clipping the corner of the red-and-grey box when the gripper retreats from the box after placing it on the top of the stack. Due to the large $h$, the gripper's motion is interpolated between an upward segment and a horizontal segment. This error is visible by the difference of a few pixels between Fig. \ref{fig:iiwa_cube_stacking_sap_vs_cqdc}e
+and Fig. \ref{fig:iiwa_cube_stacking_sap_vs_cqdc}f.
+}
 \label{fig:cube_pose}
 \end{figure}
 
@@ -459,7 +465,7 @@ where $\rho$ is a probability distribution, $w^x$ is the component of $w$ that c
 In the remaining sections, we shorthand the notation and refer to the model parameters as a matrix instead of a function for compactness (e.g. $\mathbf{A}_\rho$ instead of $\mathbf{A}_\rho(\bar{x},\bar{u})$). 
 
 \subsubsection{Analytic Smoothing}
-Analytic smoothing is done by explicit computation of $f_\rho$ as defined in \eqref{eq:smooth_surrogate_definition}. In general, it is difficult to compute $f_\rho$ for arbitrary functions $f$ and smoothing kernels $\rho$. In Sec. \ref{sec:analyticsmoothing}, we introduce a method for computing $f_\rho$ when $f$ is the CQDC dynamics, and $\rho$ is a specific but potentially unknown distribution.
+Analytic smoothing is done by explicit computation of $f_\rho$ as defined in \eqref{eq:smooth_surrogate_definition}. In general, it is difficult to compute $f_\rho$ for arbitrary functions $f$ and smoothing kernels $\rho$. In Sec. \ref{sec:analyticsmoothing}, we introduce a method for computing $f_\rho$ when $f$ is the CQDC dynamics.
 
 \subsubsection{First-Order Randomized Smoothing}
 We use the following estimators for first-order randomized smoothing of dynamical systems,
