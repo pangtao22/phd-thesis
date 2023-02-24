@@ -56,7 +56,7 @@ Anitescu's convex relaxation exactly reproduces Coulomb friction when the contac
 The popular MuJoCo simulator\cite{todorov2012mujoco, todorov2014convex} solves a convex program that closely resembles the dual of Anitescu's formulation \cite[Appendix B]{underactuated}. Moreover, Mujoco also adds regularization on contact forces to the objective function in order to improve numerical conditioning and make the dynamics invertible. However, the regularization introduces non-physical behaviors such as ``force at a distance'' that are harder to control as they are induced by many hyper-parameters \cite{kolbert2016experimental}. 
 
 Recently, Castro \textit{et al.} developed an unconstrained convex formulation of contact dynamics \cite{castro2021unconstrained} that combines many of the nice features from MuJoCo \cite{todorov2012mujoco} and Anitescu's convex relaxation \cite{anitescu2006optimization}. For instance, Castro's primal formulation is similar to Anitescu's; the contact force regularization and the removal of friction cone constraints using a projection function are inspired by similar techniques from MuJoCo. 
-Castro's formulation is designed from ground up for efficient and accurate physics simulation. For instance,  providing physical interpretations and units to the contact force regularization parameters originally proposed by MuJoCo.
+Castro's formulation is designed from ground up for efficient and accurate physics simulation. For instance, it provides physical interpretations and units to the contact force regularization parameters that are originally proposed by MuJoCo to improve numerical conditioning.
 % Similar to MuJoCo, Castro's unconstrained formulation has regularization on contact forces. However, Castro proposed a rigorous methodology for setting the regularization in a way that respects simulation accuracy. 
 
 
@@ -307,7 +307,7 @@ We also want to ensure that quasi-static simulations stay close to their second-
 At the time of writing this thesis, implicit PD controller is still an experimental feature of Drake, pending the merge of \url{https://github.com/RobotLocomotion/drake/pull/17674}.
 Implicit integration provides stability at much larger step sizes than explicit integration. The latter has been the default integration scheme in Drake due to the separation of plant and controller into individual systems. In our earlier work \cite{pang2021convex}, we compared CQDC which uses implicit integration against Drake's MBP, which is an unfair comparison due to the difference in integration schemes. 
 }.
-Our comparison shows that both CQDC and SAP are stable at large integration step sizes (up to $0.5\mathrm{s}$), but CQDC seems to be better at respecting non-penetration constraints as the step size gets larger, possibly because CQDC enforces non-penetration constraints directly on positions rather than on velocities.
+Our comparison shows that both CQDC and SAP are stable at large integration step sizes (at least $0.5\mathrm{s}$), but CQDC seems to be better at respecting non-penetration constraints as the step size gets larger, possibly because CQDC enforces non-penetration constraints directly on positions rather than on velocities.
 
 
 \subsubsection{2D Parallel Gripper}

@@ -82,7 +82,7 @@ The true contact location ${p}_{C^\star}$ is clearly in $P_0(q, \tauE)$. However
 \end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Detectability of contacts \label{sec:observability}}
+\section{Detectability of Contacts \label{sec:observability}}
 The joint torque sensor of a link is only able to measure the torque about the axis of the link's revolute joint. It is therefore possible for the torque sensor to register zero or small torque measurement, even if the link is in contact with significant contact force. In this section, we give a quantitative analysis on how likely a contact force creates little or no measurable torque by studying the simplest case of a single link.
 
 \subsection{Detectability}
@@ -109,7 +109,7 @@ To find out which part of a link is fully detectable, we can sample uniformly on
 \vspace{-0.5cm}
 \end{figure}
 
-\subsection{Quantifying ``undetectability''} \label{sec:undetectability}
+\subsection{Quantifying ``Undetectability''} \label{sec:undetectability}
 A contact at $C$ is fully detectable if any contact force in $\mathcal{K}_C$ generates \textit{any} non-zero torque measurement. However, as real torque sensor measurements are usually corrupted by noise, it is useful to know when a contact force generates a torque measurement no less than a threshold $\epsilon$.
 
 Moreover, for contacts that are not fully detectable, it is worth noting that the extent of their ``undetectability'' varies. For example, point $A$ in Fig. \ref{fig:full_observability}c is undetectable, as it is the intersection of the z-axis and the link's surface. Although both point $D$ (Fig. \ref{fig:full_observability}d) and $B$ (Fig. \ref{fig:full_observability}c) are partially detectable, it generally takes a smaller force to generate $\tau_z > \epsilon$ at $D$ than at $B$, as $D$ is further away from its joint axis.
@@ -152,12 +152,12 @@ The analysis in this section reveals a fundamental limitation of existing joint-
 Haddadin's method \cite{haddadin2017robot} determines the link in contact as the most distal link with $\tau_z(\cdot) \geq \epsilon$. As there is a significant chance that $\tau_z(p_{C^\star}) \leq \epsilon$ at the true contact position $C^\star$, it is likely that their strategy believes the contact to be on a wrong link. MCMC methods \cite{manuelli2016localizing, zwiener2019armcl} evaluate the likelihood of points being the true contact point $C^\star$ using the residual (\ref{eq:residual_qp}). If $\eta_\epsilon(p_{C^\star})$ is large, it is likely for other points to have a residual that is only larger by $\epsilon^2 \norm{f_{C^\star}}^2$, thereby trapping MCMC methods in a wrong local minimum of $l(\cdot)$. 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Contact estimation from external torque measurements}
+\section{Contact Estimation from External Torque Measurements}
 We have demonstrated that the best contact estimate achievable from $q$ and $\tauE$ is $P_0(q, \tauE)$ (Section \ref{sec:problem_statement}), which is likely to have more than one element (Section \ref{sec:observability}). Elements of $P_0(q, \tauE)$ are global optimizers of (\ref{eq:nonlinear_program}), which are also global minima of the residual $l(\cdot; q, \tauE)$ on $\mathcal{S}$. However, due to the dependence of ${J}$ on $\pCbar$ and the manifold constraint $\pCbar \in \mathcal{S}$, (\ref{eq:nonlinear_program}) is nonlinear and difficult to solve directly.
 
 In this section, we present a contact estimation strategy called RSGD, which is named after the combination of Rejection Sampling and Gradient Descent. RSGD is able to find every local minima of $l(\cdot; q, \tauE)$. Although not as ideal as finding $P_{0}(q, \tauE)$, RSGD is stronger than MCMC methods: it locates every point on $\mathcal{S}$ to which MCMC methods may converge.
 
-\subsection{Rejection sampling}
+\subsection{Rejection Sampling}
 Starting with $P \coloneqq \{\pCbar \in \mathcal{S} \}$, a set of finitely many samples drawn uniformly from $\mathcal{S}$, we can calculate the residual $l(\cdot)$ for all samples in $P$, and keep the samples which satisfy $ l \leq \epsilon$:
 \begin{equation}
 P_{\epsilon}(q, \tauE) \coloneqq \{\pCbar \in P : l(\pCbar; q, \tauE) \leq \epsilon\}. 
@@ -174,7 +174,7 @@ The biggest drawback of rejection sampling is the high rejection rate, which, fo
     \vspace{-0.6cm}
 \end{figure}
 
-\subsection{Rejection sampling + gradient descent (RSGD)\label{sec:proposed_contact_estimator}}
+\subsection{Rejection Sampling + Gradient Descent (RSGD)\label{sec:proposed_contact_estimator}}
 The high computational cost of vanilla rejection sampling, due to the high rejection rate for small $\epsilon$, can be reduced significantly by
 \begin{enumerate}
 \item  Generating a set of potential contact positions by rejection sampling using a sparse sample set $P$ and a large threshold $\delta$: 
@@ -237,7 +237,7 @@ Characterizing these regions of attraction, however, is more challenging, and on
 Nevertheless, empirically, we observe that the algorithm succeeds in finding all local minima for sufficiently dense sampling.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Active contact discrimination}
+\section{Active Contact Discrimination}
 In the event that RSGD returns multiple (possible) contacts, some form of active exploration may be desirable to discriminate the true contact from the spurious.
 Assuming contact with a static object, that will remain (approximately) in place irrespective of the robot's motion, a simple strategy to falsify a spurious contact is to move the robot so as to break contact (pull away) at that location; if residual torque remains, then this cannot have been the true contact (assuming no additional contacts were introduced during the robot's motion). 
 Similarly, the robot motion may preserve (push into) a possible contact; if the residual torque vanishes, then this (spurious) contact is falsified. 
